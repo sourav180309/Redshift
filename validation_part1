@@ -1,0 +1,89 @@
+CREATE OR REPLACE PROCEDURE "sample"."validation_test" (out_para OUT character varying) 
+AS $$
+DECLARE
+aop_rec record;
+v_null_val varchar(200);
+v_type_val varchar(200);
+--SVL_STORED_PROC_CALL 
+--SVL_STORED_PROC_MESSAGES
+BEGIN
+  --SELECT INTO aop_rec * FROM users WHERE user_id=3;
+  --select into aop_rec * from spot_gla.f_plnr_aop limit 1; --TotalOperatingExpenses data_category
+        select into aop_rec count(1) as cnt  from spot_gla.f_financials f --limit 19  --6021957
+        where currentfcstpmar is null--7529, 3074, 70
+        or amountlc is null
+        or priorfcstmar is null
+        or priorfcstpmar is null
+        or currentfcstmar is null
+        or currentfcstpmar is null
+        or aopmar is null
+        or aoppmar is null
+        or amountmar is null
+        or amountpmar is null limit 2000;
+        
+        IF aop_rec.cnt = 0 THEN
+        v_null_val = 'Sccessful';
+        else
+        v_null_val = 'Error';
+        END IF;
+ 
+        select into aop_rec sourcesystemid, typeso, departmentbase, accountbase , count(1) cnt
+        from spot_gla.f_financials where sourcesystemid='PLNRFCST'
+        and( departmentbase is null or accountbase is null)
+        group by sourcesystemid, typeso, departmentbase, accountbase  ;
+ 
+        --IF aop_rec.typeso is NULL or aop_rec.departmentbase is NULL or aop_rec.accountbase is NULL  THEN
+        IF aop_rec.cnt > 0 Then 
+        v_type_val = 'Error';
+        elsif aop_rec.typeso is not NULL THEN
+        v_type_val = 'Sccessful';
+        else
+        v_type_val = 'Sccessful';
+        end if;
+     
+        IF v_null_val ='Error' THEN 
+        out_para =' NULL Validation Error';
+        RAISE exception 'NULL Validation Error';
+        
+        elsif v_type_val = 'Error' THEN
+        out_para ='Type Validation Error';
+        RAISE exception 'Type Validation Error';
+       
+        else null;
+        end if;
+        
+    
+        select into aop_rec typeso ,f.sourcesystem,
+        d.year,d.month,
+        sum(f.amountpmar) amountpmar,
+        sum(f.amountmar) amountmar,
+        sum(f.aoppmar) aoppmar,
+        sum(f.aoppmar) aoppmar,
+        sum(f.currentfcstpmar) currentfcstpmar,
+        sum(f.currentfcstmar) currentfcstmar,
+        sum(f.priorfcstpmar) priorfcstpmar,
+        sum(f.priorfcstmar) priorfcstmar,
+        count(1)
+        from spot_gla.f_financials f
+        left Join
+        spot_gla.d_gla_dt d
+        on f.referencedate=d.date
+        where d.year=2021 and d.month=3
+        group by f.typeso,f.sourcesystem,d.year,d.month;
+        
+        select into aop_rec distinct sourcesystemid, sourcesystem, date_part('year',referencedate) as year, date_part('month',referencedate)  as month 
+        from spot_gla.f_financials 
+        where sourcesystem='TFSPLNR'--GLA
+        and sourcesystemid ='PLNRAOP'--'PLNRFCST'--PLNRAOP
+        limit 20;
+
+        out_para='Validation Sccessful';
+        RAISE INFO 'this is new %',v_type_val;
+        --RAISE INFO 'this is new %',v_type_val;--'procedure executed sccessfully';
+        
+        exception 
+        when others then 
+        RAISE INFO 'procedure executed with errors %',v_type_val;
+ END;
+$$
+ LANGUAGE plpgsql
