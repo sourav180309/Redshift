@@ -1,0 +1,99 @@
+select custom2,typeso,actmar, fmar, actpmar, fpmar from 
+(select custom2,data_category, SUM(amount_mar) actmar,sum(amount_pmar) actpmar
+from spot_gla.f_plnr_act
+where fiscal_year=2021 
+and fiscal_month=3
+and data_category='OperationalCosts' 
+--and custom2='MineralsSvcs' --MineralsSvcs	131535.06826803088	108552.246866256
+group by custom2, data_category) act inner join (
+select custom2base,typeso, SUM(amountmar) fmar,sum(amountpmar) fpmar
+from spot_gla.f_financials
+where 1=1
+and date_part('year',referencedate)=2021 
+and date_part('month',referencedate)=3
+and typeso='OCOGS' 
+--and custom2base='MineralsSvcs'
+and sourcesystem='PLNRADJ'
+group by custom2base, typeso) fact
+on custom2=custom2base
+limit 100;
+
+
+
+
+
+select * --custom2,data_category, SUM(amount_mar) actmar,sum(amount_pmar) actpmar
+from spot_gla.f_plnr_act
+where fiscal_year=2021 
+and fiscal_month=3
+and data_category='OperationalCosts' 
+and custom2 in ('MineralsSvcs','BSCPL')
+and department in ('DP_CAD_MM_MIN_01533')
+and account in (5228,5002,5026)
+
+
+select * --custom2,data_category, SUM(amount_mar) actmar,sum(amount_pmar) actpmar
+from spot_gla.f_plnr_act
+where 1=1 
+and fiscal_year=2021 
+and fiscal_month=3
+and data_category='OperationalCosts' 
+and custom2 in ('MineralsSvcs','BSCPL')
+--and department in ('TelephoneNonMobile')
+and account in (5200)
+
+
+
+select * --custom2base,typeso, SUM(amountmar) fmar,sum(amountpmar) fpmar
+from spot_gla.f_financials
+where 1=1
+and date_part('year',referencedate)=2021 
+and date_part('month',referencedate)=3
+and typeso='OCOGS' 
+--and custom2base='MineralsSvcs'
+--and sourcesystem='PLNRADJ'
+and custom2base in ('MineralsSvcs','BSCPL')
+and departmentbase in ('DP_LSG_10021295')
+and accountbase in (5200)
+
+select fiscal_year, fiscal_month, referencedate,
+case 
+        when data_category='OperationalCosts' then 'OPEX' 
+        when data_category='TotalOperatingExpenses' then 'OCOGS' else data_category end as data_category,
+custom2,department, account, subaccount, --ICP,
+sum(amount_mar) as plnr_mar, sum(amount_pmar) plnr_pmar
+from spot_gla.f_plnr_fcst plnr  inner join spot_gla.d_gla_dt
+on referencedate=date
+where 1=1
+and year=2021
+and month=3
+--where 1=1
+--and  fiscal_year=2021 and fiscal_month in (4)
+and custom2 in ('MineralsSvcs','BSCPL')
+and account=6000
+and department in ('DP_LSG_72531061')
+and subaccount='WorkersCompensation'
+group by fiscal_year, fiscal_month,referencedate, data_category,custom2,department, account, subaccount--, ICP;
+--417.2872009277344	407.8034057617187
+--417.28720	           407.80340
+--417.2872009277344	407.8034057617187
+
+
+select * --custom2base,typeso, SUM(amountmar) fmar,sum(amountpmar) fpmar
+from spot_gla.f_financials inner join spot_gla.d_gla_dt
+on referencedate=date
+where 1=1
+and year=2021
+and month=3
+--and date_part('year',referencedate)=2021 
+--and date_part('month',referencedate)=4
+and typeso='OCOGS' 
+--and custom2base='MineralsSvcs'
+--and sourcesystem='PLNRADJ'
+and custom2base in ('MineralsSvcs','BSCPL')
+and departmentbase in ('DP_LSG_72531061')
+and accountbase in (6000)
+and custom1altbase='WorkersCompensation'
+
+--1658.05200	1584.36083
+
